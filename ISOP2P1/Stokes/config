@@ -1,0 +1,4 @@
+mesh_file = R
+viscosity = 1.0
+body_force = 0.0
+angle = 0
