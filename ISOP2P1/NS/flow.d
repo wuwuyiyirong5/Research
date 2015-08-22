@@ -1,4 +1,4 @@
-104	 # number of nodes #
+104	 # number of nodes ...#
 # Nodes which define the boundary #
 0:	-8	 -8	 1	1
 1:	25	 -8	 1	1
