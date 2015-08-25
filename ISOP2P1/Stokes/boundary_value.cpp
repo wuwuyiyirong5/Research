@@ -17,8 +17,8 @@ void ISOP2P1::boundaryValueStokes(Vector<double> &x)
 	/// 遍历全部维度的速度节点.
 	for (unsigned int i = 0; i < n_total_dof_v; ++i)
 	{
-		/// 边界标志.
-		int bm = -1;
+	    /// 边界标志.
+	    int bm = -1;
 		/// 判断一下是 x 方向还是 y 方向. 分别读取标志.
 		if (i < n_dof_v)
 			bm = fem_space_v.dofInfo(i).boundary_mark;
