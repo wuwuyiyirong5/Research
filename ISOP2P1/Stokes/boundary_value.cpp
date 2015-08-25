@@ -50,31 +50,31 @@ void ISOP2P1::boundaryValueStokes(Vector<double> &x)
 		/// 方腔流边界条件.
 		if (bm == 1 || bm == 2 || bm == 3 || bm == 4)
 		{
-			rhs(i) = matrix.diag_element(i) * x(i);
-			/// 遍历 i 行.
-			for (unsigned int j = rowstart[i] + 1;
-					j < rowstart[i + 1]; ++j)
+		    rhs(i) = matrix.diag_element(i) * x(i);
+		    /// 遍历 i 行.
+		    for (unsigned int j = rowstart[i] + 1;
+			 j < rowstart[i + 1]; ++j)
+		    {
+			/// 第 j 个元素消成零(不是第 j 列!). 注意避开了对角元.
+			matrix.global_entry(j) -= matrix.global_entry(j);
+			/// 第 j 个元素是第 k 列.
+			unsigned int k = colnum[j];
+			/// 看看第 k 行的 i 列是否easymesh 为零元.
+			const unsigned int *p = std::find(&colnum[rowstart[k] + 1],
+							  &colnum[rowstart[k + 1]],
+							  i);
+			/// 如果是非零元. 则需要将这一项移动到右端项. 因为第 i 个未知量已知.
+			if (p != &colnum[rowstart[k + 1]])
 			{
-				/// 第 j 个元素消成零(不是第 j 列!). 注意避开了对角元.
-				matrix.global_entry(j) -= matrix.global_entry(j);
-				/// 第 j 个元素是第 k 列.
-				unsigned int k = colnum[j];
-				/// 看看第 k 行的 i 列是否easymesh 为零元.
-				const unsigned int *p = std::find(&colnum[rowstart[k] + 1],
-						&colnum[rowstart[k + 1]],
-						i);
-				/// 如果是非零元. 则需要将这一项移动到右端项. 因为第 i 个未知量已知.
-				if (p != &colnum[rowstart[k + 1]])
-				{
-					/// 计算 k 行 i 列的存储位置.
-					unsigned int l = p - &colnum[rowstart[0]];
-					/// 移动到右端项. 等价于 r(k) = r(k) - x(i) * A(k, i).
-					rhs(k) -= matrix.global_entry(l)
-					* x(i);
-					/// 移完此项自然是零.
-					matrix.global_entry(l) -= matrix.global_entry(l);
-				}
+			    /// 计算 k 行 i 列的存储位置.
+			    unsigned int l = p - &colnum[rowstart[0]];
+				/// 移动到右端项. 等价于 r(k) = r(k) - x(i) * A(k, i).
+			    rhs(k) -= matrix.global_entry(l)
+				* x(i);
+			    /// 移完此项自然是零.
+			    matrix.global_entry(l) -= matrix.global_entry(l);
 			}
+		    }
 		}
 	}
 	std::cout << "boundary values for Stokes OK!" << std::endl;
