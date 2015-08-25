@@ -28,6 +28,13 @@ void ISOP2P1::boundaryValueStokes(Vector<double> &x)
 		if (bm == 0)
 			continue;
 		/// 对 Dirichelet 边界根据边界分别赋值. 注意同时还要区别 x 和
+		// RealVx real_vx;
+		// RealVy real_vy;
+		// if (bm == 1 || bm == 2 || bm == 3 || bm == 4)
+		//     if (i < n_dof_v)
+		// 	x(i) = real_vx.value(fem_space_v.dofInfo(i).interp_point);
+		//     else
+		// 	x(i) = real_vy.value(fem_space_v.dofInfo(i - n_dof_v).interp_point);
 
 		/// 方腔流边界条件.
 		if (bm == 1 || bm == 2 || bm == 4)
