@@ -38,7 +38,7 @@ void ISOP2P1::buildMatrix()
 		const QuadratureInfo<DIM>& quad_info = the_element_v->findQuadratureInfo(3);
 		std::vector<double> jacobian = the_element_v->local_to_global_jacobian(quad_info.quadraturePoint());
 		int n_quadrature_point = quad_info.n_quadraturePoint();
-		std::vector<AFEPack::Point<DIM> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
+		std::vector<Point<DIM> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
 		/// 速度单元信息.
 		std::vector<std::vector<std::vector<double> > > basis_gradient_v = the_element_v->basis_function_gradient(q_point);
 		std::vector<std::vector<double> >  basis_value_v = the_element_v->basis_function_value(q_point);
@@ -81,7 +81,7 @@ void ISOP2P1::buildMatrix()
 	}
 
 	/// 构建系数矩阵和右端项.
-    mat_p_mass.reinit(sp_mass_p);
+	mat_p_mass.reinit(sp_mass_p);
 	mat_vxp_div.reinit(sp_vxp);
 	mat_vyp_div.reinit(sp_vyp);
 	FEMSpace<double,2>::ElementIterator the_element_p = fem_space_p.beginElement();
@@ -96,7 +96,7 @@ void ISOP2P1::buildMatrix()
 		const QuadratureInfo<DIM>& quad_info_p = the_element_p->findQuadratureInfo(3);
 		std::vector<double> jacobian_p = the_element_p->local_to_global_jacobian(quad_info_p.quadraturePoint());
 		int n_quadrature_point = quad_info_p.n_quadraturePoint();
-		std::vector<AFEPack::Point<DIM> > q_point_p = the_element_p->local_to_global(quad_info_p.quadraturePoint());
+		std::vector<Point<DIM> > q_point_p = the_element_p->local_to_global(quad_info_p.quadraturePoint());
 		/// 速度单元信息.
 		std::vector<std::vector<double> >  basis_value_p = the_element_p->basis_function_value(q_point_p);
 
@@ -125,7 +125,7 @@ void ISOP2P1::buildMatrix()
 				const QuadratureInfo<2>& quad_info = v_element.findQuadratureInfo(3);
 				std::vector<double> jacobian = v_element.local_to_global_jacobian(quad_info.quadraturePoint());
 				int n_quadrature_point = quad_info.n_quadraturePoint();
-				std::vector<AFEPack::Point<2> > q_point = v_element.local_to_global(quad_info.quadraturePoint());
+				std::vector<Point<2> > q_point = v_element.local_to_global(quad_info.quadraturePoint());
 
 				const std::vector<int>& element_dof_v = v_element.dof();
 				std::vector<std::vector<std::vector<double> > > basis_gradient_v = v_element.basis_function_gradient(q_point);
@@ -186,7 +186,7 @@ void ISOP2P1::updateNonlinearMatrix()
 		std::vector<double> jacobian
 		= the_element_v->local_to_global_jacobian(quad_info.quadraturePoint());
 		int n_quadrature_point = quad_info.n_quadraturePoint();
-		std::vector<AFEPack::Point<2> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
+		std::vector<Point<2> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
 		/// 速度单元信息.
 		std::vector<std::vector<std::vector<double> > > basis_gradient_v
 		= the_element_v->basis_function_gradient(q_point);

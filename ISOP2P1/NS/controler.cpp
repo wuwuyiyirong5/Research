@@ -20,7 +20,7 @@ void ISOP2P1::time_step()
 	const QuadratureInfo<2>& quad_info = the_element_v->findQuadratureInfo(0);
 	std::vector<double> jacobian = the_element_v->local_to_global_jacobian(quad_info.quadraturePoint());
 	int n_quadrature_point = quad_info.n_quadraturePoint();
-	std::vector<AFEPack::Point<2> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
+	std::vector<Point<2> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
 	/// 速度单元信息.
 	std::vector<std::vector<double> > basis_value_v = the_element_v->basis_function_value(q_point);
 	std::vector<std::vector<std::vector<double> > > basis_gradient_v = the_element_v->basis_function_gradient(q_point);

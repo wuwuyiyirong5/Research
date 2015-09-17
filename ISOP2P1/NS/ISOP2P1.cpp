@@ -14,16 +14,16 @@
 
 void ISOP2P1::initialize()
 {
-    /// 读取配置文件.
-    config("config");
-    /// 构建网格.
-    buildMesh();
-    /// 构建混合有限元 ISOP1P2 空间.
-    buildFEMSpace();
-    /// 构建矩阵结构.
-    buildMatrixStruct();
+	/// 读取配置文件.
+	config("config");
+	/// 构建网格.
+	buildMesh();
+	/// 构建混合有限元 ISOP1P2 空间.
+	buildFEMSpace();
+	/// 构建矩阵结构.
+	buildMatrixStruct();
 
-    buildMatrix();
+	buildMatrix();
 };
 
 void ISOP2P1::run()
@@ -37,10 +37,15 @@ void ISOP2P1::run()
 		outputTecplot("V0");
 	}
 	else
-		stepForwardLinearizedEuler();
+		stepForwardEuler();
 
 	time_step();
 	std::cout << "Simulation start at t = " << t << ", dt = " << dt << std::endl;
+	DiVx divx(viscosity, t);
+	DiVy divy(viscosity, t);
+	Operator::L2Project(divx, v_h[0], Operator::LOCAL_LEAST_SQUARE, 3);
+	Operator::L2Project(divy, v_h[1], Operator::LOCAL_LEAST_SQUARE, 3);
+
 	getchar();
 	while (t < t1)
 	{
@@ -58,10 +63,10 @@ void ISOP2P1::run()
 		std::cout << "t = " << t << ", the next dt = " << dt << std::endl;
 
 		static int k = 1;
-	    std::stringstream result;
-	    result.setf(std::ios::fixed);
-	    result.precision(4);
-	    result << "V" << k++;
+		std::stringstream result;
+		result.setf(std::ios::fixed);
+		result.precision(4);
+		result << "V" << k++;
 		outputTecplot(result.str().c_str());
 	}
 };

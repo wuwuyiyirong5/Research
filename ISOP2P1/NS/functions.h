@@ -46,8 +46,8 @@ public:
     std::vector<double> gradient(const double *p) const
     {
 	std::vector<double> result(2);
-	result[0] = 20.0 * p[1] * p[1] * p[1];
-	result[1] = 60.0 * p[0] * p[1] * p[1];
+	result[0] = sin(p[0]) * sin(p[1]) * exp(-2.0 * nu * t);
+	result[1] = -cos(p[0]) * cos(p[1]) * exp(-2.0 * nu * t);
 	return result;
     };
 };
@@ -70,8 +70,8 @@ public:
     std::vector<double> gradient(const double *p) const
     {
 	std::vector<double> result(2);
-	result[0] = 20.0 * p[0] * p[0] * p[0];
-	result[1] = -20.0 * p[1] * p[1] * p[1];
+	result[0] = cos(p[0]) * cos(p[1]) * exp(-2.0 * nu * t);
+	result[1] = -sin(p[0]) * sin(p[1]) * exp(-2.0 * nu * t);
 	return result;
     };
 };

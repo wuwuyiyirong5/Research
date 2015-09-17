@@ -28,6 +28,13 @@ void ISOP2P1::boundaryValueStokes(Vector<double> &x)
 		if (bm == 0)
 			continue;
 		/// 对 Dirichelet 边界根据边界分别赋值. 注意同时还要区别 x 和
+		DiVx real_vx(viscosity, t + dt);
+		DiVy real_vy(viscosity, t + dt);
+		if (bm == 1 || bm == 2 || bm == 3 || bm == 4)
+		    if (i < n_dof_v)
+			x(i) = real_vx.value(fem_space_v.dofInfo(i).interp_point);
+		    else
+			x(i) = real_vy.value(fem_space_v.dofInfo(i - n_dof_v).interp_point);
 
 //		/// 方腔流边界条件.
 //		if (bm == 1 || bm == 2 || bm == 4)
@@ -38,22 +45,22 @@ void ISOP2P1::boundaryValueStokes(Vector<double> &x)
 //			else
 //				x(i) = 0.0;
 
-		/// Poiseuille流边界条件.
-		if (bm == 1)
-			x(i) = 0.0;
-		else if (bm == 3)
-			if (i < n_dof_v)
-			{
-				PoiseuilleVx PVx(-8.0, 8.0);
-				x(i) = PVx.value(fem_space_v.dofInfo(i).interp_point);
-			}
-			else
-				x(i) = 0.0;
+		// /// Poiseuille流边界条件.
+		// if (bm == 1)
+		// 	x(i) = 0.0;
+		// else if (bm == 3)
+		// 	if (i < n_dof_v)
+		// 	{
+		// 		PoiseuilleVx PVx(-8.0, 8.0);
+		// 		x(i) = PVx.value(fem_space_v.dofInfo(i).interp_point);
+		// 	}
+		// 	else
+		// 		x(i) = 0.0;
 
 		/// 右端项这样改, 如果该行和列其余元素均为零, 则在迭代中确
 		/// 保该数值解和边界一致.
 		/// 方腔流边界条件.
-		if (bm == 1 || bm == 5 || bm == 3 || bm == 4)
+		if (bm == 1 || bm == 2 || bm == 3 || bm == 4)
 		{
 			rhs(i) = matrix.diag_element(i) * x(i);
 			/// 遍历 i 行.

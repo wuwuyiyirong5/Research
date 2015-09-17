@@ -1,4 +1,5 @@
 #include "ISOP2P1.h"
+#include "functions.h"
 #include "preconditioner.h"
 
 
@@ -16,12 +17,12 @@ void ISOP2P1::stepForwardEuler()
 	/// (0, 0)
 	for (int i = 0; i < sp_vxvx.n_nonzero_elements(); ++i)
 		matrix.global_entry(index_vxvx[i]) = dt * viscosity * mat_v_stiff.global_entry(i)
-		+ mat_v_mass.global_entry(i);
+			+ mat_v_mass.global_entry(i);
 	/// (1, 1) 这两个对角块对应扩散算子和质量算子, dt 直接乘上, 以避免
 	/// 矩阵系数过大.
 	for (int i = 0; i < sp_vyvy.n_nonzero_elements(); ++i)
 		matrix.global_entry(index_vyvy[i]) = dt * viscosity * mat_v_stiff.global_entry(i)
-		+ mat_v_mass.global_entry(i);
+			+ mat_v_mass.global_entry(i);
 	/// (0, 2) 这个不是方阵. 在矩阵结构定义的时候已经直接排除了对角元优
 	/// 先.
 	for (int i = 0; i < sp_pvx.n_nonzero_elements(); ++i)
@@ -49,7 +50,7 @@ void ISOP2P1::stepForwardEuler()
 
 	/// 遍历速度单元, 拼装相关系数矩阵和右端项.
 	for (the_element_v = fem_space_v.beginElement();
-			the_element_v != end_element_v; ++the_element_v)
+	     the_element_v != end_element_v; ++the_element_v)
 	{
 		/// 当前单元信息.
 		double volume = the_element_v->templateElement().volume();
@@ -58,7 +59,7 @@ void ISOP2P1::stepForwardEuler()
 		const QuadratureInfo<DIM>& quad_info = the_element_v->findQuadratureInfo(4);
 		std::vector<double> jacobian = the_element_v->local_to_global_jacobian(quad_info.quadraturePoint());
 		int n_quadrature_point = quad_info.n_quadraturePoint();
-		std::vector<AFEPack::Point<DIM> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
+		std::vector<Point<DIM> > q_point = the_element_v->local_to_global(quad_info.quadraturePoint());
 		/// 速度单元信息.
 		std::vector<std::vector<double> > basis_value_v = the_element_v->basis_function_value(q_point);
 		std::vector<std::vector<std::vector<double> > > basis_gradient_v = the_element_v->basis_function_gradient(q_point);
@@ -83,13 +84,13 @@ void ISOP2P1::stepForwardEuler()
 			{
 				double rhs_cont = fx_value[l] * basis_value_v[i][l] + vx_value[l] * basis_value_v[i][l];
 				rhs_cont -= dt * (vx_value[l] * vx_gradient[l][0] +
-						vy_value[l] * vx_gradient[l][1]) * basis_value_v[i][l];
+						  vy_value[l] * vx_gradient[l][1]) * basis_value_v[i][l];
 				rhs_cont *= Jxw;
 				rhs(element_dof_v[i]) += rhs_cont;
 
 				rhs_cont = fy_value[l] * basis_value_v[i][l] + vy_value[l] * basis_value_v[i][l];
 				rhs_cont -= dt * (vx_value[l] * vy_gradient[l][0] +
-						vy_value[l] * vy_gradient[l][1]) * basis_value_v[i][l];
+						  vy_value[l] * vy_gradient[l][1]) * basis_value_v[i][l];
 				rhs_cont *= Jxw;
 				rhs(n_dof_v + element_dof_v[i]) += rhs_cont;
 			}
@@ -112,7 +113,60 @@ void ISOP2P1::stepForwardEuler()
 	/// 边界条件一起处理了. 这里需要传递 x 因为 x 是临时的. 这里似乎应
 	/// 该把 v_h, p_h 和 x 统一起来, 避免冗余错误.
 	boundaryValueStokes(x);
+	/// 矩阵求解. 
+	dealii::SolverControl solver_control (400000, 1e-15, 0);
+	SolverMinRes<Vector<double> > minres (solver_control);
+	StokesPreconditioner preconditioner;
+	/// 预处理矩阵.
+	SparseMatrix<double> matrix_vxvx(sp_vxvx);
+	SparseMatrix<double> matrix_vyvy(sp_vyvy);
+	/// 这里从 Stokes 取是因为加了边界条件.
+	for (int i = 0; i < sp_vxvx.n_nonzero_elements(); ++i)
+		matrix_vxvx.global_entry(i) = matrix.global_entry(index_vxvx[i]);
+	for (int i = 0; i < sp_vyvy.n_nonzero_elements(); ++i)
+		matrix_vyvy.global_entry(i) = matrix.global_entry(index_vyvy[i]);
 
+	// preconditioner.initialize(matrix_vxvx, matrix_vyvy, mat_p_mass);
+
+	clock_t t_cost = clock();
+	// minres.solve (matrix, x, rhs, preconditioner);
+	minres.solve (matrix, x, rhs, PreconditionIdentity());
+	t_cost = clock() - t_cost;
+
+	std::cout << "time cost: " << (((float)t_cost) / CLOCKS_PER_SEC) << std::endl;
+
+	/// 将整体数值解分割成速度和压力.
+	for (int i = 0; i < n_dof_v; ++i)
+	{
+		v_h[0](i) = x(i);
+		v_h[1](i) = x(i + n_dof_v);
+	}
+	for (int i = 0; i < n_dof_p; ++i)
+		p_h(i) =  x(i + 2 * n_dof_v);
+
+	double error = 0.0;
+
+	DiVx accuracy_vx(viscosity, t + dt);
+	error = Functional::L2Error(v_h[0], accuracy_vx, 2);
+	std::cout << "|| u - u_h ||_L2 = " << error << std::endl;
+
+	error = Functional::H1SemiError(v_h[0], accuracy_vx, 1);
+	std::cout << "|| u - u_h ||_H1 = " << error << std::endl;
+
+
+	DiVy accuracy_vy(viscosity, t + dt);
+	error = Functional::L2Error(v_h[1], accuracy_vy, 2);
+	std::cout << "|| v - v_h ||_L2 = " << error << std::endl;
+
+	error = Functional::H1SemiError(v_h[1], accuracy_vy, 1);
+	std::cout << "|| v - v_h ||_H1 = " << error << std::endl;
+
+	// double p_avg = Functional::meanValue(p_h, 2);
+	// RealP accuracy_p(p_avg);
+	// error = Functional::L2Error(p_h, accuracy_p, 2);
+	// std::cout << "|| p - p_h ||_0 = " << error << std::endl;
+
+/*
 	clock_t t_cost = clock();
 
 	SparseMatrix<double> mat_BTx(sp_pvx);
@@ -172,7 +226,7 @@ void ISOP2P1::stepForwardEuler()
 	SchurComplement schur_complement(mat_BTx, mat_BTy, mat_Bx, mat_By, M, M);
 
 	SolverControl solver_control_cg (n_dof_p * 2,
-			1e-12*schur_rhs.l2_norm());
+					 1e-12*schur_rhs.l2_norm());
 	SolverCG<>    cg (solver_control_cg);
 
 
@@ -184,8 +238,8 @@ void ISOP2P1::stepForwardEuler()
 
 	cg.solve (schur_complement, p_h, schur_rhs, PreconditionIdentity());
 	std::cout << solver_control_cg.last_step()
-            				  << " CG Schur complement iterations to obtain convergence."
-            				  << std::endl;
+		  << " CG Schur complement iterations to obtain convergence."
+		  << std::endl;
 	mat_BTx.vmult(tmp1, *dynamic_cast<const Vector<double>* >(&p_h));
 	mat_BTy.vmult(tmp2, *dynamic_cast<const Vector<double>* >(&p_h));
 	tmp1 *= -1;
@@ -195,6 +249,7 @@ void ISOP2P1::stepForwardEuler()
 
 	M.vmult(v_h[0], tmp1);
 	M.vmult(v_h[1], tmp2);
+*/
 };
 
 #undef DIM
